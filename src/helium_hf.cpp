@@ -14,7 +14,6 @@
 #include <boost/format.hpp>                     // for boost::format
 #include <boost/math/constants/constants.hpp>   // for boost::math::constants::pi
 #include <boost/multi_array.hpp>                // for boost::multi_array
-#include <boost/optional.hpp>                   // for boost::optional, boost::none
 #include <Eigen/Core>                           // for Eigen::MatrixXd, Eigen::VectorXd
 #include <Eigen/Eigenvalues>                    // for Eigen::GeneralizedSelfAdjointEigenSolver
 
@@ -40,7 +39,7 @@ namespace {
     //! A function.
     /*!
         SCF計算を行う
-        \return SCF計算が正常に終了した場合はエネルギーを、しなかった場合はboost::noneを返す
+        \return SCF計算が正常に終了した場合はエネルギーを、しなかった場合はstd::nulloptを返す
     */
     std::optional<double> doscfloop();
 
@@ -108,7 +107,7 @@ namespace {
 int main()
 {
     if (auto const res = doscfloop(); res) {
-        std::cout << "SCF計算が収束しました: " << boost::format("energy = %.14f\n") % (*res);
+        std::cout << boost::format("SCF計算が収束しました: energy = %.14f") % (*res) << std::endl;
 
         return 0;
     }
@@ -155,10 +154,10 @@ namespace {
             // 固有ベクトルを取得
             c = es.eigenvectors().col(0);
 
-            // 前回のエネルギーを保管
+            // 前回のSCF計算のエネルギーを保管
             auto const eold = enew;
 
-            // エネルギーを計算する
+            // 今回のSCF計算のエネルギーを計算する
             enew = getenergy(c, ep, h);
 
             std::cout << boost::format("Iteration # %2d: HF eigenvalue, energy: %.14f %.14f\n") % iter % ep % enew;
@@ -267,8 +266,7 @@ namespace {
 
     std::vector<double> make_alpha(std::int32_t n)
     {
-        switch (n)
-        {
+        switch (n) {
         case 3:
             return { 0.31364978999999998, 1.1589229999999999, 6.3624213899999997 };
             break;
