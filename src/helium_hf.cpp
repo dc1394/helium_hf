@@ -36,7 +36,7 @@ namespace {
     */
 	static auto constexpr SCFTHRESHOLD = 1.0E-15;
 
-    //! A function.
+    //! A global function.
     /*!
         SCF計算を行う
         \return SCF計算が正常に終了した場合はエネルギーを、しなかった場合はstd::nulloptを返す
@@ -53,7 +53,7 @@ namespace {
     */
     double getenergy(Eigen::VectorXd const & c, double ep, boost::multi_array<double, 2> const & h);
 
-    //! A function.
+    //! A global function.
     /*!
         与えられた固有ベクトル、1電子積分および2電子積分からFock行列を生成する
         \param c 固有ベクトルC
@@ -63,7 +63,7 @@ namespace {
     */
     Eigen::MatrixXd makefockmatrix(Eigen::VectorXd const & c, boost::multi_array<double, 2> const & h, boost::multi_array<double, 4> const & q);
 
-    //! A function.
+    //! A global function.
     /*!
         1電子積分が格納された2次元配列を生成する
         \param alpha GTOの肩の係数が格納されたstd::vector
@@ -71,7 +71,7 @@ namespace {
     */
     boost::multi_array<double, 2> makeoneelectoroninteg(std::vector<double> const & alpha);
     
-    //! A function.
+    //! A global function.
     /*!
         重なり行列を生成する
         \param alpha GTOの肩の係数が格納されたstd::vector
@@ -79,7 +79,7 @@ namespace {
     */
     Eigen::MatrixXd makeoverlapmatrix(std::vector<double> const & alpha);
     
-    //! A function.
+    //! A global function.
     /*!
         2電子積分が格納された4次元配列を生成する
         \param alpha GTOの肩の係数が格納されたstd::vector
@@ -87,7 +87,7 @@ namespace {
     */
     boost::multi_array<double, 4> maketwoelectoroninteg(std::vector<double> const & alpha);
     
-    //! A function.
+    //! A global function.
     /*!
         GTOの肩の係数が格納された配列を生成する
         \param n GTOの個数
@@ -95,7 +95,7 @@ namespace {
     */
     std::vector<double> make_alpha(std::int32_t n);
 
-    //! A function.
+    //! A global function.
     /*!
         全ての要素が、引数で指定された値で埋められたベクトルを生成する
         \param val 要素を埋める値
@@ -280,7 +280,7 @@ namespace {
             break;
 
         default:
-            BOOST_ASSERT(!"switch文のdefaultに来てしまった!");
+            BOOST_ASSERT(!"switch文のdefaultに来てしまった！");
             return std::vector<double>();
             break;
         }
