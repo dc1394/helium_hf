@@ -107,7 +107,7 @@ namespace {
 int main()
 {
     if (auto const res = doscfloop(); res) {
-        std::cout << boost::format("SCF計算が収束しました: energy = %.14f") % (*res) << std::endl;
+        std::cout << boost::format("SCF計算が収束しました: energy = %.14f (Hartree)") % (*res) << std::endl;
 
         return 0;
     }
@@ -160,7 +160,7 @@ namespace {
             // 今回のSCF計算のエネルギーを計算する
             enew = getenergy(c, ep, h);
 
-            std::cout << boost::format("Iteration # %2d: HF eigenvalue, energy: %.14f %.14f\n") % iter % ep % enew;
+            std::cout << boost::format("Iteration # %2d: HF eigenvalue = %.14f, energy = %.14f\n") % iter % ep % enew;
 
             // SCF計算が収束したかどうか
             if (std::fabs(enew - eold) < SCFTHRESHOLD) {
