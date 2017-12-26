@@ -43,7 +43,7 @@ namespace {
     */
     std::optional<double> doscfloop();
 
-    //! A function.
+    //! A global function.
     /*!
         ヘリウム原子のエネルギーを計算する
         \param c 固有ベクトルC
