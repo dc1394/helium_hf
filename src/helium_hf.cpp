@@ -106,7 +106,7 @@ namespace {
 
 int main()
 {
-    if (auto const res = doscfloop(); res) {
+    if (auto const res(doscfloop()); res) {
         std::cout << boost::format("SCF計算が収束しました: energy = %.14f (Hartree)") % (*res) << std::endl;
 
         return 0;
