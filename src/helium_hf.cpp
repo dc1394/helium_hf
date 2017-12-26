@@ -1,7 +1,7 @@
 ﻿/*! \file helium_hf.cpp
     \brief Hartree-Fock法で、ヘリウム原子のエネルギーを計算する
     Copyright © 2017 @dc1394 All Rights Reserved.
-    (but this is originally adapted by Paolo Giannozzi for helium_hf_radial.c from http://www.fisica.uniud.it/~giannozz/Corsi/MQ/Software/C/helium_hf_radial.c )
+    (but this is originally adapted by Paolo Giannozzi for helium_hf_gauss.c from http://www.fisica.uniud.it/~giannozz/Corsi/MQ/Software/C/helium_hf_gauss.c )
     This software is released under the BSD 2-Clause License.
 */
 
@@ -55,40 +55,6 @@ namespace {
 
     //! A global function.
     /*!
-        与えられた固有ベクトル、1電子積分および2電子積分からFock行列を生成する
-        \param c 固有ベクトルC
-        \param h 1電子積分hpq
-        \param q 2電子積分Qprqs
-        \return Fock行列
-    */
-    Eigen::MatrixXd makefockmatrix(Eigen::VectorXd const & c, boost::multi_array<double, 2> const & h, boost::multi_array<double, 4> const & q);
-
-    //! A global function.
-    /*!
-        1電子積分が格納された2次元配列を生成する
-        \param alpha GTOの肩の係数が格納されたstd::vector
-        \return 1電子積分が格納された2次元配列（boost::multi_array）
-    */
-    boost::multi_array<double, 2> makeoneelectoroninteg(std::vector<double> const & alpha);
-    
-    //! A global function.
-    /*!
-        重なり行列を生成する
-        \param alpha GTOの肩の係数が格納されたstd::vector
-        \return 重なり行列（Eigen::MatrixXd）
-    */
-    Eigen::MatrixXd makeoverlapmatrix(std::vector<double> const & alpha);
-    
-    //! A global function.
-    /*!
-        2電子積分が格納された4次元配列を生成する
-        \param alpha GTOの肩の係数が格納されたstd::vector
-        \return 2電子積分が格納された4次元配列（boost::multi_array）
-    */
-    boost::multi_array<double, 4> maketwoelectoroninteg(std::vector<double> const & alpha);
-    
-    //! A global function.
-    /*!
         GTOの肩の係数が格納された配列を生成する
         \param n GTOの個数
         \return GTOの肩の係数が格納されたstd::vector
@@ -102,6 +68,40 @@ namespace {
         \return 引数で指定された値で埋められたベクトル（Eigen::VectorXd）
     */
     Eigen::VectorXd make_c(double val);
+
+    //! A global function.
+    /*!
+        与えられた固有ベクトル、1電子積分および2電子積分からFock行列を生成する
+        \param c 固有ベクトルC
+        \param h 1電子積分hpq
+        \param q 2電子積分Qprqs
+        \return Fock行列
+    */
+    Eigen::MatrixXd make_fockmatrix(Eigen::VectorXd const & c, boost::multi_array<double, 2> const & h, boost::multi_array<double, 4> const & q);
+
+    //! A global function.
+    /*!
+        1電子積分が格納された2次元配列を生成する
+        \param alpha GTOの肩の係数が格納されたstd::vector
+        \return 1電子積分が格納された2次元配列（boost::multi_array）
+    */
+    boost::multi_array<double, 2> make_oneelectoroninteg(std::vector<double> const & alpha);
+    
+    //! A global function.
+    /*!
+        重なり行列を生成する
+        \param alpha GTOの肩の係数が格納されたstd::vector
+        \return 重なり行列（Eigen::MatrixXd）
+    */
+    Eigen::MatrixXd make_overlapmatrix(std::vector<double> const & alpha);
+    
+    //! A global function.
+    /*!
+        2電子積分が格納された4次元配列を生成する
+        \param alpha GTOの肩の係数が格納されたstd::vector
+        \return 2電子積分が格納された4次元配列（boost::multi_array）
+    */
+    boost::multi_array<double, 4> make_twoelectoroninteg(std::vector<double> const & alpha);
 }
 
 int main()
@@ -126,13 +126,13 @@ namespace {
         auto alpha = make_alpha(NALPHA);
 
         // 1電子積分が格納された2次元配列を生成
-        auto const h(makeoneelectoroninteg(alpha));
+        auto const h(make_oneelectoroninteg(alpha));
 
         // 2電子積分が格納された4次元配列を生成
-        auto const q(maketwoelectoroninteg(alpha));
+        auto const q(make_twoelectoroninteg(alpha));
 
         // 重なり行列を生成
-        auto const s(makeoverlapmatrix(alpha));
+        auto const s(make_overlapmatrix(alpha));
 
         // 全て0.0で初期化された固有ベクトルを生成
         auto c(make_c(0.0));
@@ -143,7 +143,7 @@ namespace {
         // SCFループ
         for (auto iter = 1; iter < MAXITER; iter++) {
             // Fock行列を生成
-            auto const f(makefockmatrix(c, h, q));
+            auto const f(make_fockmatrix(c, h, q));
 
             // 一般化固有値問題を解く
             Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXd> es(f, s);
@@ -185,85 +185,7 @@ namespace {
 
         return e;
     }
-
-    Eigen::MatrixXd makefockmatrix(Eigen::VectorXd const & c, boost::multi_array<double, 2> const & h, boost::multi_array<double, 4> const & q)
-    {
-        Eigen::MatrixXd f = Eigen::MatrixXd::Zero(NALPHA, NALPHA);
-
-        for (auto p = 0; p < NALPHA; p++) {
-            for (auto qi = 0; qi < NALPHA; qi++) {
-                // Fpq = hpq + ΣCr * Cs * Qprqs
-                f(p, qi) = h[p][qi];
-
-                for (auto r = 0; r < NALPHA; r++) {
-                    for (auto s = 0; s < NALPHA; s++) {
-                        f(p, qi) += c[r] * c[s] * q[p][r][qi][s];
-                    }
-                }
-            }
-        }
-
-        return f;
-    }
-
-    boost::multi_array<double, 2> makeoneelectoroninteg(std::vector<double> const & alpha)
-    {
-        using namespace boost::math::constants;
-
-        boost::multi_array<double, 2> h(boost::extents[NALPHA][NALPHA]);
-
-        for (auto p = 0; p < NALPHA; p++) {
-            for (auto q = 0; q < NALPHA; q++) {
-                // αp + αq
-                auto const appaq = alpha[p] + alpha[q];
-
-                // hpq = 3αpαqπ^1.5 / (αp + αq)^2.5 - 4π / (αp + αq)
-                h[p][q] = 3.0 * alpha[p] * alpha[q] * std::pow((pi<double>() / appaq), 1.5) / appaq -
-                          4.0 * pi<double>() / appaq;
-            }
-        }
-
-        return h;
-    }
-
-    Eigen::MatrixXd makeoverlapmatrix(std::vector<double> const & alpha)
-    {
-        using namespace boost::math::constants;
-
-        Eigen::MatrixXd s = Eigen::MatrixXd::Zero(NALPHA, NALPHA);
-
-        for (auto p = 0; p < NALPHA; p++) {
-            for (auto q = 0; q < NALPHA; q++) {
-                // Spq = (π / (αp + αq))^1.5
-                s(p, q) = std::pow((pi<double>() / (alpha[p] + alpha[q])), 1.5);
-            }
-        }
-
-        return s;
-    }
-
-    boost::multi_array<double, 4> maketwoelectoroninteg(std::vector<double> const & alpha)
-    {
-        using namespace boost::math::constants;
-
-        boost::multi_array<double, 4> q(boost::extents[NALPHA][NALPHA][NALPHA][NALPHA]);
-
-        for (auto p = 0; p < NALPHA; p++) {
-            for (auto qi = 0; qi < NALPHA; qi++) {
-                for (auto r = 0; r < NALPHA; r++) {
-                    for (auto s = 0; s < NALPHA; s++) {
-                        // Qprqs = 2π^2.5 / [(αp + αq)(αr + αs)√(αp + αq + αr + αs)]
-                        q[p][r][qi][s] = 2.0 * std::pow(pi<double>(), 2.5) /
-                            ((alpha[p] + alpha[qi]) * (alpha[r] + alpha[s]) *
-                            std::sqrt(alpha[p] + alpha[qi] + alpha[r] + alpha[s]));
-                    }
-                }
-            }
-        }
-
-        return q;
-    }
-
+    
     std::vector<double> make_alpha(std::int32_t n)
     {
         switch (n) {
@@ -296,5 +218,83 @@ namespace {
         }
 
         return c;
+    }
+
+    Eigen::MatrixXd make_fockmatrix(Eigen::VectorXd const & c, boost::multi_array<double, 2> const & h, boost::multi_array<double, 4> const & q)
+    {
+        Eigen::MatrixXd f = Eigen::MatrixXd::Zero(NALPHA, NALPHA);
+
+        for (auto p = 0; p < NALPHA; p++) {
+            for (auto qi = 0; qi < NALPHA; qi++) {
+                // Fpq = hpq + ΣCr * Cs * Qprqs
+                f(p, qi) = h[p][qi];
+
+                for (auto r = 0; r < NALPHA; r++) {
+                    for (auto s = 0; s < NALPHA; s++) {
+                        f(p, qi) += c[r] * c[s] * q[p][r][qi][s];
+                    }
+                }
+            }
+        }
+
+        return f;
+    }
+
+    boost::multi_array<double, 2> make_oneelectoroninteg(std::vector<double> const & alpha)
+    {
+        using namespace boost::math::constants;
+
+        boost::multi_array<double, 2> h(boost::extents[NALPHA][NALPHA]);
+
+        for (auto p = 0; p < NALPHA; p++) {
+            for (auto q = 0; q < NALPHA; q++) {
+                // αp + αq
+                auto const appaq = alpha[p] + alpha[q];
+
+                // hpq = 3αpαqπ^1.5 / (αp + αq)^2.5 - 4π / (αp + αq)
+                h[p][q] = 3.0 * alpha[p] * alpha[q] * std::pow((pi<double>() / appaq), 1.5) / appaq -
+                          4.0 * pi<double>() / appaq;
+            }
+        }
+
+        return h;
+    }
+
+    Eigen::MatrixXd make_overlapmatrix(std::vector<double> const & alpha)
+    {
+        using namespace boost::math::constants;
+
+        Eigen::MatrixXd s = Eigen::MatrixXd::Zero(NALPHA, NALPHA);
+
+        for (auto p = 0; p < NALPHA; p++) {
+            for (auto q = 0; q < NALPHA; q++) {
+                // Spq = (π / (αp + αq))^1.5
+                s(p, q) = std::pow((pi<double>() / (alpha[p] + alpha[q])), 1.5);
+            }
+        }
+
+        return s;
+    }
+
+    boost::multi_array<double, 4> make_twoelectoroninteg(std::vector<double> const & alpha)
+    {
+        using namespace boost::math::constants;
+
+        boost::multi_array<double, 4> q(boost::extents[NALPHA][NALPHA][NALPHA][NALPHA]);
+
+        for (auto p = 0; p < NALPHA; p++) {
+            for (auto qi = 0; qi < NALPHA; qi++) {
+                for (auto r = 0; r < NALPHA; r++) {
+                    for (auto s = 0; s < NALPHA; s++) {
+                        // Qprqs = 2π^2.5 / [(αp + αq)(αr + αs)√(αp + αq + αr + αs)]
+                        q[p][r][qi][s] = 2.0 * std::pow(pi<double>(), 2.5) /
+                            ((alpha[p] + alpha[qi]) * (alpha[r] + alpha[s]) *
+                            std::sqrt(alpha[p] + alpha[qi] + alpha[r] + alpha[s]));
+                    }
+                }
+            }
+        }
+
+        return q;
     }
 }
