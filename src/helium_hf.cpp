@@ -7,7 +7,7 @@
 
 #include <cmath>                                // for std::pow, std::sqrt
 #include <cstdint>                              // for std::int32_t
-#include <iostream>                             // for std::cout, std::cerr
+#include <iostream>                             // for std::cerr, std::cin, std::cout
 #include <optional>                             // for std::make_optional, std::optional, std::nullopt
 #include <vector>                               // for std::vector
 #include <boost/assert.hpp>                     // for BOOST_ASSERT
@@ -20,15 +20,15 @@
 namespace {
     //! A global variable (constant expression).
     /*!
-        SCF計算のループの上限
+        バッファサイズの上限
     */
-	static auto constexpr MAXITER = 1000;
+    static auto constexpr MAXBUFSIZE = 32;
 
     //! A global variable (constant expression).
     /*!
-        Hartree-Fock計算に使用するGTOの個数
+        SCF計算のループの上限
     */
-	static auto constexpr NALPHA = 4;
+	static auto constexpr MAXITER = 1000;
 
     //! A global variable (constant expression).
     /*!
@@ -41,72 +41,85 @@ namespace {
         SCF計算を行う
         \return SCF計算が正常に終了した場合はエネルギーを、しなかった場合はstd::nulloptを返す
     */
-    std::optional<double> doscfloop();
+    std::optional<double> do_scfloop();
 
     //! A global function.
     /*!
-        ヘリウム原子のエネルギーを計算する
+        nalpha個のGTOによるヘリウム原子のエネルギーを計算する
         \param c 固有ベクトルC
         \param ep 一般化固有値問題のエネルギー固有値E'
         \param h 1電子積分
+        \param nalpha 使用するGTOの個数
         \return ヘリウム原子のエネルギー
     */
-    double getenergy(Eigen::VectorXd const & c, double ep, boost::multi_array<double, 2> const & h);
+    double getenergy(Eigen::VectorXd const & c, double ep, boost::multi_array<double, 2> const & h, std::int32_t nalpha);
+
+    //! A global function.
+    /*!
+        使用するGTOの数をユーザに入力させる
+        \return 使用するGTOの数
+    */
+    std::int32_t input_nalpha();
 
     //! A global function.
     /*!
         GTOの肩の係数が格納された配列を生成する
-        \param n GTOの個数
+        \param nalpha 使用するGTOの個数
         \return GTOの肩の係数が格納されたstd::vector
     */
-    std::vector<double> make_alpha(std::int32_t n);
+    std::vector<double> make_alpha(std::int32_t nalpha);
 
     //! A global function.
     /*!
-        全ての要素が、引数で指定された値で埋められたベクトルを生成する
+        全ての要素が、引数で指定された値で埋められたnalpha次元ベクトルを生成する
+        \param nalpha 使用するGTOの個数
         \param val 要素を埋める値
-        \return 引数で指定された値で埋められたベクトル（Eigen::VectorXd）
+        \return 引数で指定された値で埋められたベクトル (Eigen::VectorXd)
     */
-    Eigen::VectorXd make_c(double val);
+    Eigen::VectorXd make_c(std::int32_t nalpha, double val);
 
     //! A global function.
     /*!
-        与えられた固有ベクトル、1電子積分および2電子積分からFock行列を生成する
+        与えられたnalphaの数で、固有ベクトル、1電子積分および2電子積分からFock行列を生成する
         \param c 固有ベクトルC
         \param h 1電子積分hpq
+        \param nalpha 使用するGTOの個数
         \param q 2電子積分Qprqs
-        \return Fock行列
+        \return Fock行列 (Eigen::MatrixXd)
     */
-    Eigen::MatrixXd make_fockmatrix(Eigen::VectorXd const & c, boost::multi_array<double, 2> const & h, boost::multi_array<double, 4> const & q);
+    Eigen::MatrixXd make_fockmatrix(Eigen::VectorXd const & c, boost::multi_array<double, 2> const & h, std::int32_t nalpha, boost::multi_array<double, 4> const & q);
 
     //! A global function.
     /*!
-        1電子積分が格納された2次元配列を生成する
+        1電子積分が格納された、nalpha×nalphaの2次元配列を生成する
         \param alpha GTOの肩の係数が格納されたstd::vector
-        \return 1電子積分が格納された2次元配列（boost::multi_array）
+        \param nalpha 使用するGTOの個数
+        \return 1電子積分が格納された2次元配列 (boost::multi_array)
     */
-    boost::multi_array<double, 2> make_oneelectoroninteg(std::vector<double> const & alpha);
+    boost::multi_array<double, 2> make_oneelectoroninteg(std::vector<double> const & alpha, std::int32_t nalpha);
     
     //! A global function.
     /*!
-        重なり行列を生成する
+        nalpha次正方行列の重なり行列を生成する
         \param alpha GTOの肩の係数が格納されたstd::vector
-        \return 重なり行列（Eigen::MatrixXd）
+        \param nalpha 使用するGTOの個数
+        \return 重なり行列 (Eigen::MatrixXd)
     */
-    Eigen::MatrixXd make_overlapmatrix(std::vector<double> const & alpha);
+    Eigen::MatrixXd make_overlapmatrix(std::vector<double> const & alpha, std::int32_t nalpha);
     
     //! A global function.
     /*!
-        2電子積分が格納された4次元配列を生成する
+        2電子積分が格納されたnalpha×nalpha×nalpha×nalphaの4次元配列を生成する
         \param alpha GTOの肩の係数が格納されたstd::vector
-        \return 2電子積分が格納された4次元配列（boost::multi_array）
+        \param nalpha 使用するGTOの個数
+        \return 2電子積分が格納された4次元配列 (boost::multi_array)
     */
-    boost::multi_array<double, 4> make_twoelectoroninteg(std::vector<double> const & alpha);
+    boost::multi_array<double, 4> make_twoelectoroninteg(std::vector<double> const & alpha, std::int32_t nalpha);
 }
 
 int main()
 {
-    if (auto const res(doscfloop()); res) {
+    if (auto const res(do_scfloop()); res) {
         std::cout << boost::format("SCF計算が収束しました: energy = %.14f (Hartree)") % (*res) << std::endl;
 
         return 0;
@@ -120,22 +133,25 @@ int main()
 }
 
 namespace {
-    std::optional<double> doscfloop()
+    std::optional<double> do_scfloop()
     {
+        // 使用するGTOの数を入力
+        auto const nalpha(input_nalpha());
+
         // GTOの肩の係数が格納された配列を生成
-        auto alpha = make_alpha(NALPHA);
+        auto alpha = make_alpha(nalpha);
 
         // 1電子積分が格納された2次元配列を生成
-        auto const h(make_oneelectoroninteg(alpha));
+        auto const h(make_oneelectoroninteg(alpha, nalpha));
 
         // 2電子積分が格納された4次元配列を生成
-        auto const q(make_twoelectoroninteg(alpha));
+        auto const q(make_twoelectoroninteg(alpha, nalpha));
 
         // 重なり行列を生成
-        auto const s(make_overlapmatrix(alpha));
+        auto const s(make_overlapmatrix(alpha, nalpha));
 
         // 全て0.0で初期化された固有ベクトルを生成
-        auto c(make_c(0.0));
+        auto c(make_c(nalpha, 0.0));
 
         // 新しく計算されたエネルギー
         auto enew = 0.0;
@@ -143,7 +159,7 @@ namespace {
         // SCFループ
         for (auto iter = 1; iter < MAXITER; iter++) {
             // Fock行列を生成
-            auto const f(make_fockmatrix(c, h, q));
+            auto const f(make_fockmatrix(c, h, nalpha, q));
 
             // 一般化固有値問題を解く
             Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXd> es(f, s);
@@ -158,7 +174,7 @@ namespace {
             auto const eold = enew;
 
             // 今回のSCF計算のエネルギーを計算する
-            enew = getenergy(c, ep, h);
+            enew = getenergy(c, ep, h, nalpha);
 
             std::cout << boost::format("Iteration # %2d: HF eigenvalue = %.14f, energy = %.14f\n") % iter % ep % enew;
 
@@ -173,11 +189,11 @@ namespace {
         return std::nullopt;
     }
     
-    double getenergy(Eigen::VectorXd const & c, double ep, boost::multi_array<double, 2> const & h)
+    double getenergy(Eigen::VectorXd const & c, double ep, boost::multi_array<double, 2> const & h, std::int32_t nalpha)
     {
         auto e = ep;
-        for (auto p = 0; p < NALPHA; p++) {
-            for (auto q = 0; q < NALPHA; q++) {
+        for (auto p = 0; p < nalpha; p++) {
+            for (auto q = 0; q < nalpha; q++) {
                 // E = E' + Cp * Cq * hpq
                 e += c[p] * c[q] * h[p][q];
             }
@@ -186,9 +202,28 @@ namespace {
         return e;
     }
     
-    std::vector<double> make_alpha(std::int32_t n)
+    std::int32_t input_nalpha()
     {
-        switch (n) {
+        std::int32_t nalpha;
+
+        while (true) {
+            std::cout << "使用するGTOの個数を入力してください (3, 4 or 6): ";
+            std::cin >> nalpha;
+
+            if (!std::cin.fail() && (nalpha == 3 || nalpha == 4 || nalpha == 6)) {
+                break;
+            }
+
+            std::cin.clear();
+            std::cin.ignore(MAXBUFSIZE, '\n');
+        }
+
+        return nalpha;
+    }
+
+    std::vector<double> make_alpha(std::int32_t nalpha)
+    {
+        switch (nalpha) {
         case 3:
             return { 0.31364978999999998, 1.1589229999999999, 6.3624213899999997 };
             break;
@@ -208,29 +243,29 @@ namespace {
         }
     }
 
-    Eigen::VectorXd make_c(double val)
+    Eigen::VectorXd make_c(std::int32_t nalpha, double val)
     {
-        Eigen::VectorXd c(NALPHA);
+        Eigen::VectorXd c(nalpha);
 
         // 固有ベクトルCの要素を全てvalで初期化
-        for (auto i = 0; i < NALPHA; i++) {
+        for (auto i = 0; i < nalpha; i++) {
             c[i] = val;
         }
 
         return c;
     }
 
-    Eigen::MatrixXd make_fockmatrix(Eigen::VectorXd const & c, boost::multi_array<double, 2> const & h, boost::multi_array<double, 4> const & q)
+    Eigen::MatrixXd make_fockmatrix(Eigen::VectorXd const & c, boost::multi_array<double, 2> const & h, std::int32_t nalpha, boost::multi_array<double, 4> const & q)
     {
-        Eigen::MatrixXd f = Eigen::MatrixXd::Zero(NALPHA, NALPHA);
+        Eigen::MatrixXd f = Eigen::MatrixXd::Zero(nalpha, nalpha);
 
-        for (auto p = 0; p < NALPHA; p++) {
-            for (auto qi = 0; qi < NALPHA; qi++) {
+        for (auto p = 0; p < nalpha; p++) {
+            for (auto qi = 0; qi < nalpha; qi++) {
                 // Fpq = hpq + ΣCr * Cs * Qprqs
                 f(p, qi) = h[p][qi];
 
-                for (auto r = 0; r < NALPHA; r++) {
-                    for (auto s = 0; s < NALPHA; s++) {
+                for (auto r = 0; r < nalpha; r++) {
+                    for (auto s = 0; s < nalpha; s++) {
                         f(p, qi) += c[r] * c[s] * q[p][r][qi][s];
                     }
                 }
@@ -240,14 +275,14 @@ namespace {
         return f;
     }
 
-    boost::multi_array<double, 2> make_oneelectoroninteg(std::vector<double> const & alpha)
+    boost::multi_array<double, 2> make_oneelectoroninteg(std::vector<double> const & alpha, std::int32_t nalpha)
     {
         using namespace boost::math::constants;
 
-        boost::multi_array<double, 2> h(boost::extents[NALPHA][NALPHA]);
+        boost::multi_array<double, 2> h(boost::extents[nalpha][nalpha]);
 
-        for (auto p = 0; p < NALPHA; p++) {
-            for (auto q = 0; q < NALPHA; q++) {
+        for (auto p = 0; p < nalpha; p++) {
+            for (auto q = 0; q < nalpha; q++) {
                 // αp + αq
                 auto const appaq = alpha[p] + alpha[q];
 
@@ -260,14 +295,14 @@ namespace {
         return h;
     }
 
-    Eigen::MatrixXd make_overlapmatrix(std::vector<double> const & alpha)
+    Eigen::MatrixXd make_overlapmatrix(std::vector<double> const & alpha, std::int32_t nalpha)
     {
         using namespace boost::math::constants;
 
-        Eigen::MatrixXd s = Eigen::MatrixXd::Zero(NALPHA, NALPHA);
+        Eigen::MatrixXd s = Eigen::MatrixXd::Zero(nalpha, nalpha);
 
-        for (auto p = 0; p < NALPHA; p++) {
-            for (auto q = 0; q < NALPHA; q++) {
+        for (auto p = 0; p < nalpha; p++) {
+            for (auto q = 0; q < nalpha; q++) {
                 // Spq = (π / (αp + αq))^1.5
                 s(p, q) = std::pow((pi<double>() / (alpha[p] + alpha[q])), 1.5);
             }
@@ -276,16 +311,16 @@ namespace {
         return s;
     }
 
-    boost::multi_array<double, 4> make_twoelectoroninteg(std::vector<double> const & alpha)
+    boost::multi_array<double, 4> make_twoelectoroninteg(std::vector<double> const & alpha, std::int32_t nalpha)
     {
         using namespace boost::math::constants;
 
-        boost::multi_array<double, 4> q(boost::extents[NALPHA][NALPHA][NALPHA][NALPHA]);
+        boost::multi_array<double, 4> q(boost::extents[nalpha][nalpha][nalpha][nalpha]);
 
-        for (auto p = 0; p < NALPHA; p++) {
-            for (auto qi = 0; qi < NALPHA; qi++) {
-                for (auto r = 0; r < NALPHA; r++) {
-                    for (auto s = 0; s < NALPHA; s++) {
+        for (auto p = 0; p < nalpha; p++) {
+            for (auto qi = 0; qi < nalpha; qi++) {
+                for (auto r = 0; r < nalpha; r++) {
+                    for (auto s = 0; s < nalpha; s++) {
                         // Qprqs = 2π^2.5 / [(αp + αq)(αr + αs)√(αp + αq + αr + αs)]
                         q[p][r][qi][s] = 2.0 * std::pow(pi<double>(), 2.5) /
                             ((alpha[p] + alpha[qi]) * (alpha[r] + alpha[s]) *
