@@ -1,21 +1,21 @@
 ﻿================================================================================
-【 ソフト名 】parallelquicksort
+【 ソフト名 】helium_hf
 【  作成者  】@dc1394
 ================================================================================
 
 ★これは何？
-　クイックソートを並列化して高速化してみたコードです。ビルドには、以下のライブラ
-　リが必要です。
+　GTOによるRoothaan方程式を解くことにより、ヘリウム原子のエネルギーを求めるコー
+　ドです。
 　・Boost C++ Libraries
-　・Intel® Threading Building Blocks (Intel® TBB)
+　・Eigen
 
 ★更新履歴
-　2017/12/12 ver.1.0   README.mdを書いて公開。
+　2017/12/30 ver.1.0   README.mdを書いて公開。
 
 ★ライセンス
 　このソフトはフリーソフトウェアです（2条項BSDライセンス）。
 --------------------------------------------------------------------------------
-　parallelquicksort
+　helium_hf
 　Copyright (C) 2017 @dc1394
 
 　ソースコード形式であれバイナリ形式であれ、変更の有無に関わらず、以下の条件を満
@@ -62,8 +62,8 @@
   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 --------------------------------------------------------------------------------
 
-  parallelquicksortにはBoostコミュニティによるBoost C++ Librariesを使用してい
-　ます。こちらのライセンスは Boostライセンス になります。
+  helium_hfにはBoostコミュニティによるBoost C++ Librariesを使用しています。こち
+　らのライセンスは Boostライセンス になります。
 
 /* Boost Software License - Version 1.0 - August 17th, 2003
 *
@@ -90,6 +90,5 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-　parallelquicksortにはIntel CorporationによるIntel® Threading Building
-　Blocks(Intel® TBB)を使用しています。
-  こちらのライセンスは GNU General Public License, version 2 になります。
+　helium_hfにはEigen projectによるEigenを使用しています。こちらのライセンスは
+　MPL2になります。
