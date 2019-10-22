@@ -5,9 +5,9 @@ OBJS = helium_hf.o
 DEPS = helium_hf.d
 
 VPATH  = src
-CXX = icpc
-CXXFLAGS = -Wall -Wextra -O3 -xHOST -ipo -pipe -std=c++17
-LDFLAGS = 
+CXX = clang++
+CXXFLAGS = -Wall -Wextra -O3 -std=c++17 -mtune=native -march=native
+LDFLAGS = -lm -ldl
 
 all: $(PROG) ;
 #rm -f $(OBJS) $(DEPS)
