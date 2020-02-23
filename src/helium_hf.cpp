@@ -222,20 +222,16 @@ namespace {
         switch (nalpha) {
         case 3:
             return { 0.31364978999999998, 1.1589229999999999, 6.3624213899999997 };
-            break;
 
         case 4:
             return { 0.297104, 1.236745, 5.749982, 38.2166777 };
-            break;
 
         case 6:
             return { 0.18595935599999999, 0.45151632200000003, 1.1627151630000001, 3.384639924, 12.09819836, 65.984568240000002 };
-            break;
 
         default:
             BOOST_ASSERT(!"switch文のdefaultに来てしまった！");
             return std::valarray<double>();
-            break;
         }
     }
 
