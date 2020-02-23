@@ -5,7 +5,7 @@ OBJS = helium_hf.o
 DEPS = helium_hf.d
 
 VPATH  = src
-CXX = clang++
+CXX = g++
 CXXFLAGS = -Wall -Wextra -O3 -std=c++17 -mtune=native -march=native
 LDFLAGS = -lm -ldl
 
@@ -15,7 +15,7 @@ all: $(PROG) ;
 -include $(DEPS)
 
 $(PROG): $(OBJS)
-		$(CXX) $(LDFLAGS) $(CXXFLAGS) -o $@ $^
+		$(CXX) $^ $(LDFLAGS) $(CXXFLAGS) -o $@
 
 %.o: %.cpp
 		$(CXX) $(CXXFLAGS) -c -MMD -MP $<
