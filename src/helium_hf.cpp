@@ -5,6 +5,7 @@
     This software is released under the BSD 2-Clause License.
 */
 
+#include <chrono>                               // for std::chrono
 #include <cmath>                                // for std::pow, std::sqrt
 #include <cstdint>                              // for std::int32_t
 #include <iostream>                             // for std::cerr, std::cin, std::cout
@@ -114,8 +115,15 @@ namespace {
 
 int main()
 {
+    using namespace std::chrono;
+
+    auto const start = system_clock::now();
+    
     if (auto const res(do_scfloop()); res) {
         std::cout << boost::format("SCF計算が収束しました: energy = %.14f (Hartree)") % (*res) << std::endl;
+
+        auto const end = system_clock::now();
+        std::cout << boost::format("計算時間 = %.14f（秒）\n") % duration_cast< duration<double> >(end - start).count();
 
         return 0;
     }
@@ -124,14 +132,14 @@ int main()
 
         return -1;
     }
-
 }
 
 namespace {
     std::optional<double> do_scfloop()
     {
         // 使用するGTOの数を入力
-        auto const nalpha(input_nalpha());
+        //auto const nalpha(input_nalpha());
+        int nalpha = 6;
 
         // GTOの肩の係数が格納された配列を生成
         auto alpha = make_alpha(nalpha);

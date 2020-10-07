@@ -6,8 +6,8 @@ DEPS = helium_hf.d
 
 VPATH  = src
 CXX = g++
-CXXFLAGS = -Wall -Wextra -O3 -std=c++17 -mtune=native -march=native -fopenmp
-LDFLAGS = -lm -ldl
+CXXFLAGS = -Wall -Wextra -O3 -std=c++17 -mtune=native -march=native -fopenmp -m64
+LDFLAGS = -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core -lgomp -lpthread -lm -ldl
 
 all: $(PROG) ;
 #rm -f $(OBJS) $(DEPS)
